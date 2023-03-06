@@ -313,16 +313,58 @@ public class MainFrame extends JFrame {
 		displayLayoutPreview();
 	}
 
-	private void addPanelSelectionListener(Component pnlEmpty) {
-		pnlEmpty.addMouseListener(new MouseAdapter() {
+	private void addPanelSelectionListener(Component comp) {
+		comp.addMouseListener(new MouseAdapter() {
 			private Color noBackground;
 
 			@Override
 			public void mouseEntered(MouseEvent e) {
 				System.out.println( "entered. dragging? " + dragging);
 				if (currentSelectedComponentInGrid != null && dragging) {
-					pnlEmpty.setBackground(Color.YELLOW);
+					CellConstraints sourceConstraints = formLayout.getConstraints(currentSelectedComponentInGrid);
+					int sourceX = sourceConstraints.gridX;
+					int sourceY = sourceConstraints.gridY;
+
+
+					CellConstraints constraints = formLayout.getConstraints(comp);
+					int x = constraints.gridX;
+					int y = constraints.gridY;
+					System.out.println("current grid X " + x);
+					System.out.println("current grid Y " + y);
+					for (int i = sourceX; i <= formLayout.getColumnCount(); i++) {
+						if (i <= x) {
+							if (i != sourceX) {
+								Component c1 = getComponentAtFormLayoutGridCell(i, y);
+								c1.setBackground(Color.YELLOW);
+								int newSpanColumnValue = (i - sourceX) + 1;
+								System.out.println("span col: " + newSpanColumnValue);
+								spanColumns.setValue(newSpanColumnValue);
+							}
+							for (int k = sourceY+1; k <= formLayout.getRowCount(); k++) {
+								if (k <= y) {
+									Component c2 = getComponentAtFormLayoutGridCell(i, k);
+									c2.setBackground(Color.ORANGE);
+									int newSpanRowValue = (k - sourceY) + 1;
+									System.out.println("span row: " + newSpanRowValue);
+									spanRows.setValue(newSpanRowValue);
+								} else {
+									Component c2 = getComponentAtFormLayoutGridCell(i, k);
+									c2.setBackground(noBackground);
+								}
+							}
+						} else {
+							for (int l = 1; l <= formLayout.getColumnCount(); l++) {
+								for (int m = 1; m <= sourceY-1; m++) {
+									Component c3 = getComponentAtFormLayoutGridCell(l, m);
+									c3.setBackground(noBackground);
+								}
+							}
+							Component c3 = getComponentAtFormLayoutGridCell(i, y);
+							c3.setBackground(noBackground);
+						}
+					}
 					System.out.println("mouse dragged over component ");
+					pnlMain.repaint();
 				}
 			}
 
@@ -333,31 +375,42 @@ public class MainFrame extends JFrame {
 
 			@Override
 			public void mousePressed(MouseEvent e) {
-				if (noBackground == null) {
-					noBackground = pnlEmpty.getBackground();
+				if (comp instanceof EmptyPanel) {
+					if (noBackground == null) {
+						noBackground = comp.getBackground();
+					}
+					comp.setBackground(comp.getBackground().equals(noBackground.brighter()) ? noBackground : noBackground.brighter());
 				}
-				pnlEmpty.setBackground(pnlEmpty.getBackground().equals(noBackground.brighter()) ? noBackground : noBackground.brighter());
-				currentSelectedComponentInGrid = pnlEmpty;
+				currentSelectedComponentInGrid = comp;
 
 				//				Component component = pnlMain.getComponent(
 				//						formLayout.getConstraints(currentSelectedEmptyCellPanel).gridY * formLayout.getColumnCount() +
 				//						formLayout.getConstraints(currentSelectedEmptyCellPanel).gridX);
 
-				int x = formLayout.getConstraints(currentSelectedComponentInGrid).gridX;
-				int y = formLayout.getConstraints(currentSelectedComponentInGrid).gridY;
-				System.out.println("current grid X " + formLayout.getConstraints(currentSelectedComponentInGrid).gridX);
-				System.out.println("current grid Y " + formLayout.getConstraints(currentSelectedComponentInGrid).gridY);
+				CellConstraints constraints = formLayout.getConstraints(currentSelectedComponentInGrid);
+				int x = constraints.gridX;
+				int y = constraints.gridY;
+				System.out.println("current grid X " + x);
+				System.out.println("current grid Y " + y);
 
-				if ((int) spanColumns.getValue() > formLayout.getColumnCount() - x +1) {
-					spanColumns.setValue(formLayout.getColumnCount() - x +1);
+				boolean spanToColEnd = false;
+				boolean spanToRowEnd = false;
+				if (spanToColEnd) {
+					if ((int) spanColumns.getValue() > formLayout.getColumnCount() - x +1) {
+						spanColumns.setValue(formLayout.getColumnCount() - x +1);
+					}
+				} else {
+					spanColumns.setValue(1);
 				}
-				if ((int) spanRows.getValue() > formLayout.getRowCount() - y +1) {
-					spanRows.setValue(formLayout.getRowCount() - y +1);
+				if (spanToRowEnd) {
+					if ((int) spanRows.getValue() > formLayout.getRowCount() - y +1) {
+						spanRows.setValue(formLayout.getRowCount() - y +1);
+					}
+				} else {
+					spanRows.setValue(1);
 				}
 				selectedColumn.setValue(x);
 				selectedRow.setValue(y);
-				System.out.println(x + " - " + y);
-
 				MainFrame.this.repaint();
 			}
 		});
