@@ -78,6 +78,7 @@ public class MainFrame extends JFrame {
 	private JTextField txtDummy;
 	private JComboBox<String> cmbDummy;
 	private JList<String> lstDummy;
+	private FormDebugPanel pnlDummy;
 
 	private List<Component> dummyComponents;
 
@@ -134,6 +135,7 @@ public class MainFrame extends JFrame {
 		mdlLstDummy.addElement("Element 1");
 		mdlLstDummy.addElement("Element 2");
 		lstDummy = new JList<String>(mdlLstDummy);
+		pnlDummy = new FormDebugPanel();
 		dummyComponents = new ArrayList<>();
 		dummyComponents.add(lblDummy);
 		dummyComponents.add(btnDummy);
@@ -142,6 +144,7 @@ public class MainFrame extends JFrame {
 		dummyComponents.add(txtDummy);
 		dummyComponents.add(cmbDummy);
 		dummyComponents.add(lstDummy);
+		dummyComponents.add(pnlDummy);
 		addListeners();
 	}
 
@@ -263,6 +266,13 @@ public class MainFrame extends JFrame {
 	}
 
 	protected void setGridVisible(boolean gridVisible) {
+		if (gridVisible) {
+			if (chkPaintRows.isSelected()) {
+				setPaintRows(true);
+			}
+		} else {
+			setPaintRows(false);
+		}
 		setGridColor(gridVisible ? currentColor : pnlMain.getBackground(), gridVisible);
 	}
 
@@ -440,6 +450,7 @@ public class MainFrame extends JFrame {
 	}
 
 	private void addComponent(Component comp, int col, int row, int spanColumns, int spanRows, boolean addToEmptyPanel) {
+		JPanel pnlToUse = (currentSelectedComponentInGrid instanceof FormDebugPanel ? (JPanel) currentSelectedComponentInGrid : pnlMain);
 		if (addToEmptyPanel && currentSelectedComponentInGrid != null) {
 			//			// check the row and column properties of label1's constraints
 			//			CellConstraints label1Constraints = bla(currentSelectedEmptyCellPanel);
@@ -447,10 +458,9 @@ public class MainFrame extends JFrame {
 			//			int label1Column = label1Constraints.gridY;
 			//			System.out.println("Label 1 is in row " + label1Row + ", column " + label1Column);
 
-			int x = formLayout.getConstraints(currentSelectedComponentInGrid).gridX;
-			int y = formLayout.getConstraints(currentSelectedComponentInGrid).gridY;
-			System.out.println("current grid X " + formLayout.getConstraints(currentSelectedComponentInGrid).gridX);
-			System.out.println("current grid Y " + formLayout.getConstraints(currentSelectedComponentInGrid).gridY);
+			CellConstraints constraints = formLayout.getConstraints(currentSelectedComponentInGrid);
+			int x = constraints.gridX;
+			int y = constraints.gridY;
 
 			//			Component component = null;
 			//			if (y == 1) {
@@ -465,23 +475,23 @@ public class MainFrame extends JFrame {
 					if (k == y && i <= x) {
 						continue;
 					}
-					Component c1 = getComponentAtFormLayoutGridCell(i, k);
+					Component c1 = getComponentAtFormLayoutGridCell(i, k, pnlToUse);
 					if (c1 != null) {
-						pnlMain.remove(c1);
+						pnlToUse.remove(c1);
 					}
 				}
 			}
-			pnlMain.remove(currentSelectedComponentInGrid);
+			pnlToUse.remove(currentSelectedComponentInGrid);
 
 			//			pnlMain.remove(CC.xy(col, row));
 			currentSelectedComponentInGrid = null;
 		}
-		pnlMain.add(comp, CC.xywh(col, row, spanColumns, spanRows));
+		pnlToUse.add(comp, CC.xywh(col, row, spanColumns, spanRows));
 		addPanelSelectionListener(comp);
 	}
 
-	private Component getComponentAtFormLayoutGridCell(int x, int y) {
-		Component[] comps = pnlMain.getComponents();
+	private Component getComponentAtFormLayoutGridCell(int x, int y, JPanel pnl) {
+		Component[] comps = pnl.getComponents();
 		for (Component c : comps) {
 			CellConstraints constraints = formLayout.getConstraints(c);
 			if (constraints.gridX != x || constraints.gridY != y) {
@@ -490,6 +500,10 @@ public class MainFrame extends JFrame {
 			return c;
 		}
 		return null;
+	}
+
+	private Component getComponentAtFormLayoutGridCell(int x, int y) {
+		return getComponentAtFormLayoutGridCell(x, y, pnlMain);
 	}
 
 	private CellConstraints bla(Component currentSelectedEmptyCellPanel2) {
@@ -559,8 +573,12 @@ public class MainFrame extends JFrame {
 	}
 
 	private JPanel createLeftPanel() {
-		FormLayout layout = new FormLayout("m:g", "f:p, f:p, f:p, f:p, f:p, f:p, f:p");
+		FormLayout layout = new FormLayout("m:g", "f:p, f:p, f:p, f:p, f:p, f:p, f:p, f:p, f:p, m");
 		JPanel pnl = new JPanel(layout);
+
+		FormLayout dummyLayout = new FormLayout("m:g", "f:m:g");
+		pnlDummy.setLayout(dummyLayout);
+		pnlDummy.add(new JLabel("panel"), CC.xy(1, 1));
 		pnl.add(lblDummy, CC.xy(1, 1));
 		pnl.add(btnDummy, CC.xy(1, 2));
 		pnl.add(chkDummy, CC.xy(1, 3));
@@ -568,6 +586,7 @@ public class MainFrame extends JFrame {
 		pnl.add(txtDummy, CC.xy(1, 5));
 		pnl.add(cmbDummy, CC.xy(1, 6));
 		pnl.add(lstDummy, CC.xy(1, 7));
+		pnl.add(pnlDummy, CC.xy(1, 9));
 		return pnl;
 	}
 

@@ -1,8 +1,10 @@
-package ch.sysout.jformlayoutbuilder.ui;
+package ch.sysout.jformlayoutbuilder;
 
 import javax.swing.UIManager;
 
 import com.formdev.flatlaf.FlatDarkLaf;
+
+import ch.sysout.jformlayoutbuilder.ui.MainFrame;
 
 public class FormLayoutBuilder {
 
