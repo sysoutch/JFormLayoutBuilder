@@ -27,11 +27,15 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JToggleButton;
 import javax.swing.WindowConstants;
 
 import com.jgoodies.forms.debug.FormDebugPanel;
@@ -77,6 +81,7 @@ public class MainFrame extends JFrame {
 	private JRadioButton rdbDummy;
 	private JTextField txtDummy;
 	private JComboBox<String> cmbDummy;
+	private JTabbedPane tpDummy;
 	private JList<String> lstDummy;
 	private FormDebugPanel pnlDummy;
 
@@ -87,8 +92,15 @@ public class MainFrame extends JFrame {
 	private Color currentColor;
 
 	protected Component currentSelectedComponentInGrid;
-
 	protected boolean dragging;
+	private JProgressBar prgDummy;
+	private JSplitPane splDummy;
+	private JScrollPane spDummy;
+
+	private JButton btnToggleGrowRow;
+
+	private JButton btnToggleGrowColumn;
+
 
 	public MainFrame() {
 		super(TITLE);
@@ -106,6 +118,9 @@ public class MainFrame extends JFrame {
 		btnAddColumn = new JButton("Add Column");
 		btnRemoveRow = new JButton("Remove Row");
 		btnRemoveColumn = new JButton("Remove Column");
+		btnToggleGrowRow = new JButton("Toggle Grow Row");
+		btnToggleGrowColumn = new JButton("Toggle Grow Column");
+		
 		btnAddComponent = new JButton("Add Component");
 		selectedColumn = new JSpinner();
 		selectedRow = new JSpinner();
@@ -125,17 +140,36 @@ public class MainFrame extends JFrame {
 
 
 		lblDummy = new JLabel("Label");
+		lblDummy.setName("JLabel");
 		btnDummy = new JButton("Button");
+		btnDummy.setName("JButton");
 		chkDummy = new JCheckBox("Check Box");
+		chkDummy.setName("JCheckBox");
 		rdbDummy = new JRadioButton("Radio Button");
+		rdbDummy.setName("JRadioButton");
 		txtDummy = new JTextField("Text Field");
+		txtDummy.setName("JTextField");
 		cmbDummy = new JComboBox<String>();
+		cmbDummy.setName("JComboBox<String>");
+		tpDummy = new JTabbedPane();
+		tpDummy.setName("JTabbedPane");
+		prgDummy = new JProgressBar();
+		prgDummy.setName("JProgressBar");
+		splDummy = new JSplitPane();
+		splDummy.setName("JSplitPane");
+		spDummy = new JScrollPane();
+		spDummy.setName("JScrollPane");
+		tpDummy.addTab("Tab 1", new JPanel());
+		tpDummy.addTab("Tab 2", new JPanel());
+		tpDummy.addTab("Tab 3", new JPanel());
 		DefaultListModel<String> mdlLstDummy = new DefaultListModel<>();
 		mdlLstDummy.addElement("Element 0");
 		mdlLstDummy.addElement("Element 1");
 		mdlLstDummy.addElement("Element 2");
 		lstDummy = new JList<String>(mdlLstDummy);
+		lstDummy.setName("JList<String>");
 		pnlDummy = new FormDebugPanel();
+		pnlDummy.setName("FormDebugPanel");
 		dummyComponents = new ArrayList<>();
 		dummyComponents.add(lblDummy);
 		dummyComponents.add(btnDummy);
@@ -143,8 +177,12 @@ public class MainFrame extends JFrame {
 		dummyComponents.add(rdbDummy);
 		dummyComponents.add(txtDummy);
 		dummyComponents.add(cmbDummy);
+		dummyComponents.add(tpDummy);
 		dummyComponents.add(lstDummy);
 		dummyComponents.add(pnlDummy);
+		dummyComponents.add(prgDummy);
+		dummyComponents.add(splDummy);
+		dummyComponents.add(spDummy);
 		addListeners();
 	}
 
@@ -168,7 +206,8 @@ public class MainFrame extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				removeLastRow();
+//				removeLastRow();
+				removeRow((int) selectedRow.getValue());
 			}
 		});
 
@@ -176,10 +215,27 @@ public class MainFrame extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				removeLastColumn();
+				//removeLastColumn();
+				removeColumn((int) selectedColumn.getValue());
 			}
 		});
+		
+		btnToggleGrowRow.addActionListener(new ActionListener() {
 
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				toggleGrowRow((int) selectedRow.getValue());
+			}
+		});
+		
+		btnToggleGrowColumn.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				toggleGrowColumn((int) selectedColumn.getValue());
+			}
+		});
+		
 		btnAddComponent.addActionListener(new ActionListener() {
 
 			@Override
@@ -237,6 +293,22 @@ public class MainFrame extends JFrame {
 				}
 			});
 		}
+	}
+
+	protected void toggleGrowRow(int row) {
+		RowSpec currentRowSpec = formLayout.getRowSpec(row);
+		RowSpec newRowSpec = currentRowSpec.encode().equals("f:p") ? RowSpec.decode("f:p:g") : RowSpec.decode("f:p");
+		formLayout.setRowSpec(row, newRowSpec);
+		revalidateAndRepaint();
+		displayLayoutPreview();
+	}
+
+	protected void toggleGrowColumn(int column) {
+		ColumnSpec currentColumnSpec = formLayout.getColumnSpec(column);
+		ColumnSpec newColumnSpec = currentColumnSpec.encode().equals("m") ? ColumnSpec.decode("m:g") : ColumnSpec.decode("m");
+		formLayout.setColumnSpec(column, newColumnSpec);
+		revalidateAndRepaint();
+		displayLayoutPreview();
 	}
 
 	private Component cloneSwingComponent(Component c) {
@@ -450,6 +522,9 @@ public class MainFrame extends JFrame {
 	}
 
 	private void addComponent(Component comp, int col, int row, int spanColumns, int spanRows, boolean addToEmptyPanel) {
+		if (comp == null) {
+			return;
+		}
 		JPanel pnlToUse = (currentSelectedComponentInGrid instanceof FormDebugPanel ? (JPanel) currentSelectedComponentInGrid : pnlMain);
 		if (addToEmptyPanel && currentSelectedComponentInGrid != null) {
 			//			// check the row and column properties of label1's constraints
@@ -488,6 +563,7 @@ public class MainFrame extends JFrame {
 		}
 		pnlToUse.add(comp, CC.xywh(col, row, spanColumns, spanRows));
 		addPanelSelectionListener(comp);
+		displayLayoutPreview();
 	}
 
 	private Component getComponentAtFormLayoutGridCell(int x, int y, JPanel pnl) {
@@ -516,20 +592,33 @@ public class MainFrame extends JFrame {
 		removeRow(formLayout.getRowCount());
 	}
 
-	protected void removeRow(int rowCount) {
-		//		pnlMain.remove(layoutComponents.getComponentAt(row, col));
-		formLayout.removeRow(formLayout.getRowCount());
+	protected void removeRow(int row) {
+		// pnlMain.remove(layoutComponents.getComponentAt(row, 1));
+		
+		for (int x = 1; x <= formLayout.getColumnCount(); x++) {
+			Component comp = getComponentAtFormLayoutGridCell(x, row);
+			pnlMain.remove(comp);
+		}
+		formLayout.removeRow(row);
 		revalidateAndRepaint();
+		displayLayoutPreview();
 	}
 
 	protected void removeLastColumn() {
 		removeColumn(formLayout.getColumnCount());
 	}
 
-	protected void removeColumn(int columnCount) {
+	protected void removeColumn(int column) {
 		//		pnlMain.remove(layoutComponents.getComponentAt(row, col));
-		formLayout.removeColumn(formLayout.getColumnCount());
+		for (int y = 1; y <= formLayout.getRowCount(); y++) {
+			Component comp = getComponentAtFormLayoutGridCell(column, y);
+			if (comp != null) {
+				pnlMain.remove(comp);
+			}
+		}
+		formLayout.removeColumn(column);
 		revalidateAndRepaint();
+		displayLayoutPreview();
 	}
 
 	private void createUI() {
@@ -550,17 +639,19 @@ public class MainFrame extends JFrame {
 		JScrollPane spMain = new JScrollPane(pnlMain);
 		add(spMain);
 		add(pnlLeft, BorderLayout.WEST);
-		add(pnlRight, BorderLayout.EAST);
+		add(pnlRight, BorderLayout.SOUTH);
 	}
 
 	private JPanel createTopPanel() {
-		FormLayout layout = new FormLayout("m, m, m, m, m, m, m, m, m, m, m, m, m", "f:p");
+		FormLayout layout = new FormLayout("m, m, m, m, m, m, m, m, m, m, m, m, m, m, m", "f:p");
 		JPanel pnl = new JPanel(layout);
 		int x = 1;
 		pnl.add(btnAddRow, CC.xy(x++, 1));
 		pnl.add(btnAddColumn, CC.xy(x++, 1));
 		pnl.add(btnRemoveRow, CC.xy(x++, 1));
 		pnl.add(btnRemoveColumn, CC.xy(x++, 1));
+		pnl.add(btnToggleGrowRow, CC.xy(x++, 1));
+		pnl.add(btnToggleGrowColumn, CC.xy(x++, 1));
 		pnl.add(btnAddComponent, CC.xy(x++, 1));
 		pnl.add(selectedColumn, CC.xy(x++, 1));
 		pnl.add(selectedRow, CC.xy(x++, 1));
@@ -573,20 +664,18 @@ public class MainFrame extends JFrame {
 	}
 
 	private JPanel createLeftPanel() {
-		FormLayout layout = new FormLayout("m:g", "f:p, f:p, f:p, f:p, f:p, f:p, f:p, f:p, f:p, m");
+		FormLayout layout = new FormLayout("m:g", "f:p, f:p, f:p, f:p, f:p, f:p, f:p, f:p, f:p, f:p, f:p, f:p, m");
 		JPanel pnl = new JPanel(layout);
 
 		FormLayout dummyLayout = new FormLayout("m:g", "f:m:g");
 		pnlDummy.setLayout(dummyLayout);
 		pnlDummy.add(new JLabel("panel"), CC.xy(1, 1));
-		pnl.add(lblDummy, CC.xy(1, 1));
-		pnl.add(btnDummy, CC.xy(1, 2));
-		pnl.add(chkDummy, CC.xy(1, 3));
-		pnl.add(rdbDummy, CC.xy(1, 4));
-		pnl.add(txtDummy, CC.xy(1, 5));
-		pnl.add(cmbDummy, CC.xy(1, 6));
-		pnl.add(lstDummy, CC.xy(1, 7));
-		pnl.add(pnlDummy, CC.xy(1, 9));
+		int x = 1;
+		int y = 1;
+		for (Component c : dummyComponents) {
+			pnl.add(c, CC.xy(x, y));
+			y++;
+		}
 		return pnl;
 	}
 
@@ -606,6 +695,9 @@ public class MainFrame extends JFrame {
 	}
 
 	private void displayLayoutPreview() {
+		if (txtPreviewLayout == null) {
+			return;
+		}
 		int rowCount = formLayout.getRowCount();
 		int columnCount = formLayout.getColumnCount();
 		String[] rowSpecs = new String[rowCount];
@@ -621,6 +713,47 @@ public class MainFrame extends JFrame {
 			columnSpecs[i] = formLayout.getColumnSpec(i+1).encode();
 			columnSpecsString += ", " + columnSpecs[i];
 		}
-		txtPreviewLayout.setText("FormLayout layout = new FormLayout(\"" + columnSpecsString + "\", \"" + rowSpecsString + "\");");
+		String str = "FormLayout layout = new FormLayout(\"" + columnSpecsString + "\", \"" + rowSpecsString + "\");\n"
+				+ "JPanel pnl = new JPanel(layout);";
+				
+		for (int y = 1; y <= formLayout.getRowCount(); y++) {
+			for (int x = 1; x <= formLayout.getColumnCount(); x++) {
+				Component comp = getComponentAtFormLayoutGridCell(x, y);
+				String componentAsString = "";
+				if (comp == null || comp instanceof EmptyPanel) {
+					continue;
+				} else if (comp instanceof JLabel) {
+					componentAsString = "JLabel";
+				} else if (comp instanceof JComboBox) {
+					componentAsString = "JComboBox";
+				} else if (comp instanceof JButton) {
+					componentAsString = "JButton";
+				} else if (comp instanceof JList) {
+					componentAsString = "JList";
+				} else if (comp instanceof JTextField) {
+					componentAsString = "JTextField";
+				} else if (comp instanceof JCheckBox) {
+					componentAsString = "JCheckBox";
+				} else if (comp instanceof JRadioButton) {
+					componentAsString = "JRadioButton";
+				} else if (comp instanceof JTabbedPane) {
+					componentAsString = "JTabbedPane";
+				} else if (comp instanceof JSplitPane) {
+					componentAsString = "JSplitPane";
+				} else if (comp instanceof JColorChooser) {
+					componentAsString = "JColorChooser";
+				} else if (comp instanceof JScrollPane) {
+					componentAsString = "JScrollPane";
+				} else if (comp instanceof JTextArea) {
+					componentAsString = "JTextArea";
+				} else if (comp instanceof JToggleButton) {
+					componentAsString = "JToggleButton";
+				} else {
+					componentAsString = comp.getName();
+				}
+				str += "\npnl.add(new "+componentAsString+"(), CC.xy("+x+", "+y+");";
+			}
+		}
+		txtPreviewLayout.setText(str);
 	}
 }
